@@ -1,0 +1,340 @@
+/* Competition desk.
+ *
+ * Three fixed homes whose position never moves: a sticky strip (where the
+ * night is, which feed is live, the panic control, the wall cover), Program
+ * (what the room sees) and Preview (the next round). Every control is a
+ * Frontier component; this file is layout on tokens: the strip, the grid,
+ * seat rows, the board and tabular numerals. */
+
+.cadm {
+  box-sizing: border-box;
+  color: var(--frontier-content-strong);
+  font-family: var(--frontier-font-family, "ABC Schengen A", Arial, sans-serif);
+  font-weight: 400;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 16px 20px 64px;
+}
+.cadm *, .cadm *::before, .cadm *::after { box-sizing: inherit; }
+.cadm input {
+  background: var(--frontier-surface-page);
+  border: 1px solid var(--frontier-border-light);
+  border-radius: var(--frontier-radius-control, 4px);
+  color: var(--frontier-content-strong);
+  font: inherit;
+  font-size: var(--frontier-body-sm-size, 14px);
+  min-width: 0;
+  padding: 6px 10px;
+}
+.cadm input:disabled { color: var(--frontier-content-muted); }
+.cadm label { display: flex; flex-direction: column; gap: 6px; font-size: var(--frontier-body-sm-size, 14px); color: var(--frontier-content-muted); }
+.cadm__row { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+/* What the seat is doing, sat beside what the seat IS. Tabular so four seats
+   read as a column of balances rather than four sentences. */
+.cadm__seatact {
+  color: var(--frontier-content-muted);
+  font-size: var(--frontier-body-sm-size, 14px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cadm__muted { color: var(--frontier-content-muted); font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__warn { color: var(--frontier-status-warning); font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__lbl { color: var(--frontier-content-muted); font-size: var(--frontier-body-sm-size, 14px); white-space: nowrap; }
+.cadm__reason { color: var(--frontier-content-muted); font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+/* a dropdown on the tokens: the native menu, our chrome */
+.cadm__selwrap { display: block; position: relative; }
+.cadm__selwrap .cadm__sel { width: 100%; }
+.cadm__sel {
+  appearance: none; -webkit-appearance: none;
+  background: var(--frontier-surface-page);
+  border: 1px solid var(--frontier-border-light);
+  border-radius: var(--frontier-radius-control, 4px);
+  color: var(--frontier-content-strong);
+  cursor: pointer;
+  font: inherit; font-size: var(--frontier-body-sm-size, 14px);
+  min-width: 84px;
+  padding: 6px 30px 6px 10px;
+}
+.cadm__sel:focus-visible { outline: 2px solid var(--frontier-content-strong); outline-offset: 1px; }
+.cadm__selwrap::after {
+  border-bottom: 1.5px solid var(--frontier-content-muted); border-right: 1.5px solid var(--frontier-content-muted);
+  content: ""; height: 6px; pointer-events: none; position: absolute; right: 12px; top: 50%;
+  transform: translateY(-70%) rotate(45deg); width: 6px;
+}
+
+/* ── the sticky strip ─────────────────────────────────────────────────── */
+.cadm__sticky {
+  background: var(--frontier-surface-page);
+  border-bottom: 1px solid var(--frontier-border-extra-light);
+  margin: 0 -20px 32px;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.cadm__striprow { align-items: center; display: flex; gap: 12px; height: 78px; }
+.cadm__striprow .frontier-btn, .cadm__striprow .frontier-badge { white-space: nowrap; flex: 0 0 auto; }
+/* The night, read left to right: the series as a small label over the one
+   strong sentence, then the four stages as a stepper. Done stages are filled
+   dots, the next one wears a ring, later ones are hollow; the detail under a
+   name is its winner, its time, or its state. */
+.cadm__nightname { display: inline-flex; flex-direction: column; gap: 2px; }
+.cadm__series.frontier-btn { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--frontier-content-muted); padding: 0; height: auto; min-height: 0; justify-content: flex-start; }
+.cadm__position { color: var(--frontier-content-strong); font-size: var(--frontier-body-md-size, 15px); font-weight: 500; white-space: nowrap; }
+.cadm__rail { align-self: center; position: relative; top: 4px; display: flex; flex: 1 1 auto; margin-left: 20px; min-width: 0; padding-left: 20px; border-left: 1px solid var(--frontier-border-extra-light); }
+/* One gap for all three parts put the call time as far from its round as the
+   round was from the rail. The time belongs to the label, so it sits under it. */
+.cadm__railit { display: inline-flex; flex-direction: column; align-items: center; gap: 0; min-width: 88px; padding-top: 8px; position: relative; font-size: 12.5px; line-height: 1.15; white-space: nowrap; }
+.cadm__railit b { margin-top: 8px; }
+.cadm__railit i { margin-top: 3px; }
+.cadm__railit::before { border-top: 1px solid var(--frontier-border-light); content: ""; left: 0; position: absolute; right: 0; top: 12px; }
+.cadm__railit:first-child::before { left: 50%; }
+.cadm__railit:last-child::before { right: 50%; }
+.cadm__raildot { background: var(--frontier-surface-page); border: 1.5px solid currentColor; border-radius: 999px; box-sizing: border-box; height: 9px; position: relative; width: 9px; }
+.cadm__railit b { font-weight: 500; margin-top: 8px; }
+.cadm__railit i { font-style: normal; font-size: 11px; }
+.cadm__railit.is-done { color: var(--frontier-content-muted); }
+.cadm__railit.is-done .cadm__raildot { background: currentColor; }
+.cadm__railit.is-next { color: var(--frontier-content-strong); }
+.cadm__railit.is-next .cadm__raildot { background: currentColor; box-shadow: 0 0 0 3px var(--frontier-surface-page), 0 0 0 4.5px currentColor; }
+.cadm__railit.is-later { color: var(--frontier-content-muted); }
+.cadm__railit.is-later .cadm__raildot { border-color: var(--frontier-border-light); }
+.cadm__panic { display: inline-flex; margin-left: 8px; }
+.cadm__spacer { flex: 1; }
+.cadm__tokin { width: 200px; }
+.cadm__cover { margin-left: 24px; }
+.cadm__confirmrow:empty { display: none; }
+.cadm__confirmrow { border-top: 1px solid var(--frontier-border-extra-light); padding: 8px 0; }
+.cadm__confirm { align-items: center; display: inline-flex; flex-wrap: wrap; gap: 8px; font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__confirm input { width: 240px; }
+.cadm__incident { border-top: 1px solid var(--frontier-border-extra-light); display: flex; flex-direction: column; gap: 6px; padding: 8px 0; }
+.cadm__incline { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--frontier-body-sm-size, 14px); }
+/* The toast floats at the foot of the window, never in the layout: a result
+   that pushes the page around is worse than one you have to glance down for. */
+.cadm__toast { bottom: 24px; left: 50%; position: fixed; transform: translateX(-50%); z-index: 5; }
+.cadm__toast:empty { display: none; }
+.cadm .frontier-card__head-label { white-space: nowrap; }
+
+/* ── the night ────────────────────────────────────────────────────────── */
+.cadm__night { margin-bottom: 20px; }
+.cadm__nightfoot { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; }
+.cadm__nightgrid { display: grid; gap: 14px 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); margin-bottom: 14px; }
+.cadm__calltimes { display: flex; flex-direction: column; gap: 6px; }
+.cadm__callrow { display: flex; flex-wrap: wrap; gap: 10px; }
+.cadm__callrow label { width: 110px; }
+
+/* ── two columns ──────────────────────────────────────────────────────── */
+/* The round the operator is arming leads, and the wall it will appear on
+   follows. Even columns because both carry a wide row now: the roster on the
+   left, the clock's controls on the right. */
+.cadm__grid2 { align-items: start; display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cadm__program .frontier-card__body, .cadm__preview .frontier-card__body { display: flex; flex-direction: column; gap: 10px; }
+.cadm__livehead { align-items: baseline; display: flex; flex-wrap: wrap; gap: 12px; }
+.cadm__clock { font-size: var(--frontier-heading-3-size, 24px); font-variant-numeric: tabular-nums; font-weight: 500; }
+.cadm__clock.is-big { font-size: var(--frontier-heading-1-size, 48px); line-height: 1; }
+.cadm__status { color: var(--frontier-content-muted); font-size: var(--frontier-body-sm-size, 14px); margin: 0; }
+/* The wall, mirrored. A fixed 1600px viewport scaled to the card, so the
+   monitor shows the room's real proportions rather than a squeezed reflow of
+   the same page at card width. */
+.cadm__monitor {
+  aspect-ratio: 16 / 9;
+  background: var(--frontier-surface-page, #fff);
+  border: 1px solid var(--frontier-border-extra-light);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+.cadm__monitorfr {
+  border: 0;
+  height: 900px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform-origin: 0 0;
+  width: 1600px;
+}
+.cadm__count { align-items: baseline; display: flex; flex-wrap: wrap; gap: 12px; }
+.cadm__count.is-none { flex-direction: column; align-items: flex-start; gap: 6px; }
+.cadm__time { width: 84px; font-variant-numeric: tabular-nums; }
+.cadm__nightover { margin: 0; }
+.cadm__result { border-top: 1px solid var(--frontier-border-extra-light); display: flex; flex-direction: column; gap: 8px; padding-top: 12px; }
+.cadm__resulth { align-items: baseline; display: flex; gap: 12px; justify-content: space-between; }
+.cadm__won { margin: 0; }
+.cadm__meta { display: flex; flex-direction: column; gap: 2px; font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__meta i { color: var(--frontier-content-muted); display: inline-block; font-style: normal; width: 110px; }
+.cadm__wallfoot { border-top: 1px solid var(--frontier-border-extra-light); display: flex; flex-direction: column; gap: 10px; padding-top: 12px; }
+.cadm__line { width: min(100%, 360px); }
+
+/* the board: rank, name, one figure */
+.cadm__board { list-style: none; margin: 0; padding: 0; }
+.cadm__boardrow { align-items: baseline; border-bottom: 1px solid var(--frontier-border-extra-light); display: grid; gap: 12px; grid-template-columns: 24px minmax(0, 1fr) auto; padding: 8px 0; }
+.cadm__boardrow.is-win .cadm__name, .cadm__boardrow.is-win .cadm__val { font-weight: 500; }
+.cadm__boardrow.is-empty { grid-template-columns: 1fr; }
+.cadm__rank { color: var(--frontier-content-muted); font-variant-numeric: tabular-nums; }
+.cadm__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cadm__val { font-variant-numeric: tabular-nums; text-align: right; }
+.cadm__sub { color: var(--frontier-content-muted); font-size: 12px; grid-column: 2 / -1; }
+
+/* ── the next round ───────────────────────────────────────────────────── */
+.cadm__fact { align-items: center; display: flex; flex-wrap: wrap; font-size: var(--frontier-body-sm-size, 14px); gap: 8px 12px; justify-content: space-between; margin: 0; }
+/* A column flex container stretches its children, which pulled the round
+   selector's inline-flex trough across the whole card and left the five items
+   huddled at one end of a grey band. Let it hug its content; the field grid
+   below still spans the card. */
+.cadm__change { align-items: flex-start; display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.cadm__change > .frontier-seg { flex: 0 0 auto; }
+/* The id sits beside the stage it is named after; the selector keeps its own
+   width and the two align on their controls, not on their labels. */
+.cadm__stagerow { align-items: flex-end; align-self: stretch; display: flex; flex-wrap: nowrap; gap: 8px 12px; }
+.cadm__stagerow > label.is-id { flex: 1 1 110px; min-width: 0; }
+.cadm__stagerow > .frontier-seg { flex: 0 0 auto; margin-bottom: 3px; }
+.cadm__changegrid { align-self: stretch; display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.cadm__changegrid > label { flex: 1 1 140px; min-width: 0; }
+.cadm__changegrid > label.is-clock { flex: 0 0 96px; }
+.cadm .frontier-seg__item { white-space: nowrap; }
+/* A ring after a mouse click is noise; a ring after a Tab is the whole point. */
+.cadm .frontier-seg__item:focus { outline: none; }
+.cadm .frontier-seg__item:focus-visible { outline: 2px solid var(--frontier-content-strong); outline-offset: 2px; }
+.cadm__hotline { display: flex; flex-direction: column; gap: 6px; }
+.cadm__strangers { display: flex; flex-direction: column; gap: 6px; }
+.cadm__markets { display: flex; flex-direction: column; gap: 2px; font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__markets i { color: var(--frontier-content-muted); font-style: normal; }
+.cadm__seatst { font-size: var(--frontier-body-sm-size, 14px); }
+.cadm__seatst.is-ready { color: var(--frontier-status-success); }
+.cadm__seatst.is-seated { color: var(--frontier-content-strong); }
+.cadm__seatst.is-waiting { color: var(--frontier-content-muted); }
+.cadm__actfoot .cadm__row { width: 100%; }
+/* Air between the round's controls and the seat list. Removing the hot-draw
+   line from practice left the first seat sitting directly under the Show and
+   Practice switch, which read as one block. */
+.cadm__seats { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+/* Three fixed tracks; the id and the status only exist when they have
+   something to say, and then they add their own column. An always-present
+   empty track costs its gap, and that gap is what stopped the name fields
+   short of the right edge everything else lines up on. */
+.cadm__seat { align-items: center; display: grid; gap: 8px; grid-auto-columns: auto; grid-auto-flow: column; grid-template-columns: 16px 28px minmax(0, 1fr); min-height: 36px; }
+.cadm__botname { color: var(--frontier-content-strong); font-size: var(--frontier-body-sm-size, 14px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cadm__seatn { color: var(--frontier-content-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.cadm__face { background: var(--frontier-surface-muted); border: 1px solid var(--frontier-border-light); border-radius: 999px; cursor: pointer; height: 28px; overflow: hidden; padding: 0; width: 28px; }
+.cadm__facei { display: block; height: 100%; object-fit: cover; width: 100%; }
+.cadm__faceb { color: var(--frontier-content-muted); display: block; font-size: 10px; line-height: 26px; text-align: center; }
+.cadm__seatid { width: 90px; }
+.cadm__seatmeta { align-items: center; display: inline-flex; gap: 6px; justify-content: flex-end; min-width: 0; }
+.cadm__facemenu { display: inline-flex; gap: 6px; grid-column: 3 / -1; }
+.cadm__seatfoot { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+.cadm__actfoot { border-top: 1px solid var(--frontier-border-extra-light); display: flex; flex-direction: column; gap: 8px; padding-top: 12px; }
+.cadm__wide { width: 100%; }
+.cadm__iconbtn.frontier-btn { padding-left: 10px; padding-right: 10px; }
+/* The arm button takes the row; the face lookup sits beside it at the same
+   height. */
+.cadm__armrow { align-items: stretch; display: flex; gap: 8px; }
+.cadm__armrow .cadm__wide { flex: 1; }
+.cadm__armrow > span { align-items: stretch; display: flex; }
+.cadm__armrow .cadm__iconbtn.frontier-btn { align-self: stretch; height: auto; }
+/* The pressed state of the user-id toggle: it is a mode, so it stays lit
+   while the id fields are showing. */
+.cadm__iconbtn.is-on.frontier-btn { box-shadow: none; }
+.cadm__discard { margin-top: 4px; }
+
+/* ── the operator log ─────────────────────────────────────────────────── */
+.cadm__oplog { margin-top: 24px; }
+.cadm__opl { list-style: none; margin: 8px 0 0; padding: 0; }
+.cadm__oplr { display: grid; font-size: var(--frontier-body-sm-size, 14px); gap: 10px; grid-template-columns: 76px 120px 160px minmax(0, 1fr); padding: 4px 0; }
+.cadm__oplr.is-bad { color: var(--frontier-status-danger); }
+.cadm__oplt { color: var(--frontier-content-muted); font-variant-numeric: tabular-nums; }
+.cadm__opld { color: var(--frontier-content-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .cadm__sticky { padding-bottom: 0; }
+  .cadm__striprow { flex-wrap: wrap; height: auto; padding: 8px 0; row-gap: 6px; }
+  .cadm__rail { flex-basis: 100%; margin-left: 0; order: 9; }
+  .cadm__grid2 { grid-template-columns: minmax(0, 1fr); }
+  .cadm__grid2.is-live .cadm__preview { order: 1; }
+  .cadm__nightgrid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── the player's seat page ───────────────────────────────────────────── */
+/* ── the player's seat page ──────────────────────────────────────────────
+   Read once, on a phone, in a noisy room, roughly ninety seconds before a
+   broadcast. One decision per screen and nothing else on it. */
+.cjoin {
+  margin: 0 auto;
+  max-width: 30rem;
+  padding: 64px 24px;
+  text-align: center;
+}
+.cjoin__eyebrow {
+  color: var(--frontier-content-muted);
+  font-size: var(--frontier-body-sm-size);
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+.cjoin h1 {
+  font-size: var(--frontier-heading-4-size);
+  margin: 0 0 16px;
+}
+.cjoin__sub {
+  color: var(--frontier-content-muted);
+  line-height: 1.55;
+  margin: 0 0 28px;
+}
+.cjoin__go {
+  background: var(--frontier-status-success);
+  border: 1px solid transparent;
+  border-radius: var(--frontier-radius-control);
+  color: var(--frontier-content-inverse);
+  cursor: pointer;
+  display: inline-block;
+  font: inherit;
+  font-size: var(--frontier-heading-sm-size);
+  padding: 14px 34px;
+  text-decoration: none;
+}
+.cjoin__go:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.cjoin__go.is-off {
+  background: transparent;
+  border-color: var(--frontier-border-light);
+  color: var(--frontier-content-muted);
+}
+.cjoin__count {
+  color: var(--frontier-content-muted);
+  font-size: var(--frontier-body-md-size);
+  margin: 20px 0 0;
+}
+.cjoin__link {
+  color: var(--frontier-content-muted);
+  display: inline-block;
+  font-size: var(--frontier-body-md-size);
+  margin-top: 12px;
+}
+.cjoin__err {
+  color: var(--frontier-status-danger);
+  font-size: var(--frontier-body-md-size);
+  margin-top: 20px;
+}
+
+.cadm__practice { display: flex; flex-direction: column; gap: 8px; }
+
+/* One row for every wall screen: two labelled groups and the line toggle. */
+.cadm__screens { align-items: center; column-gap: 14px; display: grid; grid-template-columns: max-content minmax(0, 1fr); row-gap: 10px; }
+.cadm__screensnow { align-items: baseline; color: var(--frontier-content-muted, #8e8c89); display: flex; flex-wrap: wrap; font-size: 12px; gap: 8px; grid-column: 1 / -1; }
+.cadm__screensnow b { color: var(--frontier-content-strong, #2d2b28); font-weight: 500; }
+.cadm__screensctl { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.cadm__screenslbl { color: var(--frontier-content-muted, #8e8c89); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+
+/* ── history panel ───────────────────────────────────────────────────────── */
+.cadm__histgrid { display: grid; gap: 20px; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); }
+.cadm__nights { display: flex; flex-direction: column; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.cadm__nightrow button { background: none; border: 0; border-radius: var(--frontier-radius-card-sm, 8px); cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; text-align: left; width: 100%; }
+.cadm__nightrow.is-on button { background: var(--frontier-surface-emphasized, #f0efee); }
+.cadm__nightrow .cadm__meta, .cadm__nightrow .cadm__won { color: var(--frontier-content-muted, #8e8c89); }
+.cadm__nightdetail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 900px) { .cadm__histgrid { grid-template-columns: 1fr; } }

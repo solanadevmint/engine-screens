@@ -1,0 +1,905 @@
+<meta charset="utf-8"><link rel="stylesheet" href="../styles/wall.css">
+<style>/* Broadcast wall.
+ *
+ * Fluid by construction. The Belgrade LED is 3360x1344 (2.5:1) and a fixed
+ * 1920x1080 stage composed inside it letterboxes to roughly 80% of the wall,
+ * which is the failure that got photographed. Everything here is sized in
+ * vw/vh with clamps, so one page fills a 2.5:1 wall, a 16:9 projector and a
+ * laptop with no scale factor and no canvas.
+ *
+ * Dark ground on purpose: the wall sits in a black frame in a dim room, and a
+ * white page floodlights the stage and shows panel moire.
+ */
+
+:root:has(.cw) {
+  background: #0e0d0c;
+}
+html:has(.cw),
+body:has(.cw) {
+  background: #0e0d0c;
+  margin: 0;
+  overflow: hidden;
+}
+
+.cw {
+  --ink: #f4f2ef;
+  --dim: #8e8c89;
+  --line: rgba(244, 242, 239, 0.1);
+  --up: #4fc57f;
+  --down: #ff6259;
+  --hot: #eb8435;
+  /* A quiet raised surface for chips on either ground. Defined in BOTH
+     themes: a fallback that only works on the dark wall renders invisible
+     the moment somebody runs the light one on a projector. */
+  --panel: rgba(244, 242, 239, 0.08);
+  background: #0e0d0c;
+  box-sizing: border-box;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--frontier-font-family, "ABC Schengen A", Arial, sans-serif);
+  font-weight: 400;
+  height: 100vh;
+  padding: clamp(16px, 2.2vh, 40px) clamp(20px, 2.4vw, 64px);
+  width: 100vw;
+}
+.cw *,
+.cw *::before,
+.cw *::after {
+  box-sizing: inherit;
+}
+.cw.is-light {
+  --ink: #2d2b28;
+  --dim: #8e8c89;
+  --line: rgba(28, 28, 29, 0.12);
+  --up: #479e6b;
+  --down: #e23f3e;
+  --panel: rgba(28, 28, 29, 0.06);
+  background: #fff;
+}
+
+/* ── head ────────────────────────────────────────────────────────────── */
+.cw__head {
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: clamp(12px, 1.6vw, 32px);
+  padding-bottom: clamp(8px, 1.2vh, 20px);
+}
+.cw__phase {
+  font-size: clamp(22px, 3.4vh, 62px);
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+.cw__clock {
+  font-size: clamp(26px, 4.4vh, 84px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+  letter-spacing: -0.02em;
+  margin-left: auto;
+}
+.cw__clock.is-urgent {
+  color: var(--down);
+}
+.cw__winner {
+  color: var(--up);
+  font-size: clamp(18px, 3.2vh, 58px);
+  font-weight: 450;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+.cw__stale {
+  background: rgba(255, 98, 89, 0.16);
+  color: var(--down);
+  font-size: clamp(11px, 1.4vh, 20px);
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+  padding: 4px 10px;
+  text-transform: uppercase;
+}
+
+/* ── board ───────────────────────────────────────────────────────────── */
+.cw__board {
+  display: grid;
+  flex: 1;
+  /* rank, face, name, position, score. Name takes the room; the numeric
+     columns size to their content and align down the board. PnL is the whole
+     ranking, so there is no "behind" column: the order already says it. */
+  grid-template-columns:
+    clamp(28px, 3vw, 72px)
+    calc(var(--cw-name, 40px) * 1.05)
+    minmax(0, 1fr)
+    max-content
+    max-content;
+  grid-auto-rows: minmax(0, 1fr);
+  column-gap: clamp(14px, 2vw, 48px);
+  row-gap: clamp(2px, 0.5vh, 10px);
+  list-style: none;
+  margin: 0;
+  min-height: 0;
+  padding: clamp(8px, 1.4vh, 24px) 0;
+}
+
+/* Columns, not a table: the wall must not reflow when a name is long or a
+   number gains a digit. Everything numeric is tabular and right-aligned. */
+.cw__row {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  padding: clamp(5px, 1vh, 18px) 0;
+  min-width: 0;
+}
+.cw__row:last-child {
+  border-bottom: 0;
+}
+/* First place is carried by weight and a rule, not colour alone. */
+.cw__row.is-first {
+  border-bottom-color: rgba(244, 242, 239, 0.3);
+}
+.cw__row.is-first .cw__name,
+.cw__row.is-first .cw__rank {
+  font-weight: 450;
+}
+
+.cw__rank {
+  color: var(--dim);
+  font-size: var(--cw-name, clamp(18px, 2.8vh, 52px));
+  font-variant-numeric: tabular-nums;
+}
+.cw__name {
+  font-size: var(--cw-name, clamp(18px, 2.8vh, 52px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cw__pos {
+  align-items: baseline;
+  display: flex;
+  font-size: var(--cw-sub, clamp(12px, 1.7vh, 30px));
+  gap: clamp(5px, 0.6vw, 14px);
+  min-width: 0;
+}
+.cw__side {
+  font-weight: 450;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cw__side.is-long {
+  color: var(--up);
+}
+.cw__side.is-short {
+  color: var(--down);
+}
+.cw__sym,
+.cw__lev {
+  color: var(--ink);
+}
+.cw__lev {
+  color: var(--dim);
+}
+.cw__flat {
+  color: var(--dim);
+}
+.cw__power {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.cw__power i,
+.cw__power small {
+  color: var(--dim);
+  font-size: 0.54em;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+.cw__power b {
+  color: var(--ink);
+  font-size: 0.86em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+}
+.cw__tag {
+  border-radius: 3px;
+  font-size: 0.7em;
+  letter-spacing: 0.06em;
+  padding: 0.1em 0.45em;
+  text-transform: uppercase;
+}
+.cw__tag.is-hot {
+  background: rgba(235, 132, 53, 0.2);
+  color: var(--hot);
+}
+.cw__tag.is-boost {
+  background: rgba(235, 132, 53, 0.28);
+  color: var(--hot);
+}
+
+.cw__acct,
+.cw__bonus {
+  color: var(--dim);
+  font-size: var(--cw-sub, clamp(11px, 1.6vh, 28px));
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.cw__bonus {
+  color: var(--hot);
+}
+.cw__score {
+  font-size: var(--cw-name, clamp(18px, 2.8vh, 52px));
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+  text-align: right;
+}
+.cw__score.is-up {
+  color: var(--up);
+}
+.cw__score.is-down {
+  color: var(--down);
+}
+
+/* ── idle + foot ─────────────────────────────────────────────────────── */
+.cw__idle {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 28px);
+  justify-content: center;
+}
+.cw__idlemark {
+  font-size: clamp(28px, 5vh, 96px);
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+.cw__idletext {
+  color: var(--dim);
+  font-size: clamp(14px, 2.2vh, 40px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cw__foot {
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: clamp(11px, 1.6vh, 28px);
+  letter-spacing: 0.06em;
+  min-height: 1.4em;
+  padding-top: clamp(6px, 1vh, 18px);
+  text-transform: uppercase;
+}
+
+/* Segment phases change the whole wall so the room can tell at a glance
+   which mechanic is live, without reading a word. A Hot turns the whole
+   wall the Hot orange with dark ink, the same orange the terminal turns;
+   Boost warms the header red. */
+.cw.is-hot,
+.cw.is-hotWarning {
+  --ink: #0e0d0c;
+  --dim: rgba(14, 13, 12, 0.6);
+  --line: rgba(14, 13, 12, 0.18);
+  --panel: rgba(14, 13, 12, 0.1);
+  /* Scores in ink on the orange: green and red both go muddy on it, and
+     the sign already carries the direction. */
+  --up: #0e0d0c;
+  --down: #0e0d0c;
+  --hot: #0e0d0c;
+  background: #eb8435;
+  color: var(--ink);
+}
+.cw.is-hot .cw__head,
+.cw.is-hotWarning .cw__head { border-bottom-color: rgba(14, 13, 12, 0.35); }
+.cw.is-hot .cw__phase,
+.cw.is-hotWarning .cw__phase,
+.cw.is-hot .cw__clock,
+.cw.is-hotWarning .cw__clock { color: var(--ink); }
+.cw.is-hot .cw__railseg.is-now,
+.cw.is-hotWarning .cw__railseg.is-now { background: var(--ink); color: #eb8435; }
+.cw.is-hot .cw__face,
+.cw.is-hotWarning .cw__face { background: rgba(14, 13, 12, 0.1); border-color: rgba(14, 13, 12, 0.3); }
+.cw.is-hot .cw__stale,
+.cw.is-hotWarning .cw__stale { background: rgba(14, 13, 12, 0.85); color: #eb8435; }
+.cw.is-boost .cw__head { border-bottom-color: rgba(255, 98, 89, 0.55); }
+.cw.is-boost .cw__phase { color: var(--down); }
+
+/* ── wall: player faces ────────────────────────────────────────────────── */
+/* Sized off the same --cw-name scale as the name, so the face tracks the row
+   height at any seat count instead of being a fixed pixel size that breaks
+   when the roster grows. */
+.cw__face { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: calc(var(--cw-name) * 1.05); height: calc(var(--cw-name) * 1.05);
+  border-radius: clamp(4px, 0.6vh, 12px); overflow: hidden; margin-right: 0.45em;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16); }
+.cw__facei { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cw__faceb { font-size: calc(var(--cw-name) * 0.42); font-weight: 700; letter-spacing: 0.02em; opacity: 0.8; }
+
+/* ── the stages ──────────────────────────────────────────────────────────
+   The four screens that fill the rest of an evening. Same rules as the live
+   board: readable from the back of the room, nothing on screen that does not
+   answer the question the room has right now. */
+.cw--stage .cw__stage {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: clamp(8px, 1.8vh, 32px);
+  justify-content: center;
+  padding: clamp(16px, 3vh, 60px);
+  text-align: center;
+}
+.cw__stagemark {
+  color: var(--dim);
+  font-size: clamp(14px, 2.4vh, 44px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.cw__stagebig {
+  font-size: clamp(40px, 11vh, 200px);
+  font-weight: 450;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+.cw__stagesub {
+  color: var(--dim);
+  font-size: clamp(14px, 2.4vh, 44px);
+  letter-spacing: 0.08em;
+  max-width: 40ch;
+  /* A two-line sub-head that breaks after the second-to-last word reads as a
+     rendering fault at this size. */
+  text-wrap: balance;
+}
+.cw__stageclock {
+  font-size: clamp(56px, 20vh, 340px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+/* The field, before there is a board to put them on. */
+.cw__field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(10px, 2vw, 44px);
+  justify-content: center;
+  list-style: none;
+  margin: clamp(6px, 1.5vh, 30px) 0 0;
+  padding: 0;
+}
+.cw__fieldp {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.8vh, 14px);
+  /* The face scale on this screen is its own: there is no row to track. */
+  --cw-name: clamp(26px, 5vh, 92px);
+}
+.cw__fieldn {
+  font-size: clamp(13px, 2vh, 38px);
+  letter-spacing: -0.01em;
+}
+
+
+/* ── the announce screens ────────────────────────────────────────────────
+   Ported from the Belgrade arena wall, which is the design the room has
+   already seen work. Left column: what is happening and when. Right rail:
+   who is in it. Green is the countdown accent, as it is there; orange stays
+   reserved for the Hot Market, which is what it means everywhere else on
+   this wall. */
+.cw--stage.is-announce { justify-content: center; }
+.cw__ann {
+  display: grid;
+  gap: clamp(20px, 3vw, 72px);
+  /* Two columns on a wide wall, stacked on anything narrower, so the same
+     page fills a 2.5:1 LED and a 16:9 projector without a scale factor. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  min-height: 0;
+}
+@media (max-aspect-ratio: 16 / 10) {
+  .cw__ann { grid-template-columns: minmax(0, 1fr); }
+}
+.cw__annl {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 26px);
+  justify-content: center;
+  min-width: 0;
+}
+.cw__annr {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 30px);
+  justify-content: center;
+  min-width: 0;
+}
+
+.cw__pills { display: flex; gap: clamp(5px, 0.7vw, 14px); }
+.cw__pill {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #b5b2ae;
+  display: inline-flex;
+  font-size: clamp(11px, 1.6vh, 26px);
+  gap: 0.5em;
+  padding: 0.42em 0.95em;
+  white-space: nowrap;
+}
+.cw__pill.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #131211;
+}
+.cw__dot {
+  background: #2e9e63;
+  border-radius: 50%;
+  height: 0.42em;
+  width: 0.42em;
+}
+.cw.is-light .cw__pill { border-color: rgba(28, 28, 29, 0.22); color: #6f6c68; }
+.cw.is-light .cw__pill.is-on { background: #131211; border-color: #131211; color: #f2f0ed; }
+
+.cw__annh {
+  font-size: clamp(28px, 6vh, 118px);
+  font-weight: 450;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  margin: clamp(2px, 0.8vh, 14px) 0 0;
+  text-wrap: balance;
+}
+.cw__anncd { display: flex; flex-direction: column; gap: clamp(2px, 0.5vh, 10px); }
+.cw__annkick {
+  color: var(--dim);
+  font-size: clamp(11px, 1.7vh, 28px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.cw__anncl {
+  color: var(--up);
+  font-size: clamp(52px, 15vh, 260px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.cw__annnote {
+  color: var(--dim);
+  font-size: clamp(11px, 1.7vh, 30px);
+  margin: 0;
+  max-width: 46ch;
+}
+.cw__annnote.is-bad { color: var(--down); }
+
+/* The night, as a list of stages. The equivalent of the arena's wall-clock
+   schedule: same job, from the data this product has. */
+.cw__sched {
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(4px, 1vh, 16px);
+}
+.cw__schedrow {
+  border-top: 1px solid var(--line);
+  display: flex;
+  font-size: clamp(12px, 2vh, 38px);
+  gap: 1em;
+  justify-content: space-between;
+  padding: clamp(4px, 0.9vh, 16px) 0;
+}
+.cw__schedrow b { color: var(--dim); font-weight: 400; }
+.cw__schedrow.is-done { color: var(--dim); }
+.cw__schedrow.is-done b { color: var(--ink); }
+.cw__schedrow.is-now { color: var(--up); }
+.cw__schedrow.is-now b { color: var(--up); }
+
+/* ── the rail ───────────────────────────────────────────────────────────
+   A band label, then the players under it. */
+.cw__heat { display: flex; flex-direction: column; gap: clamp(5px, 1vh, 16px); min-width: 0; }
+.cw__band {
+  background: #1d1c1a;
+  border-radius: 8px;
+  color: #8e8b86;
+  font-size: clamp(10px, 1.5vh, 24px);
+  letter-spacing: 0.11em;
+  padding: 0.62em 1.1em;
+}
+.cw.is-light .cw__band { background: var(--frontier-surface-emphasized, #f0efee); }
+.cw__tiles {
+  display: grid;
+  gap: clamp(5px, 0.9vh, 16px);
+  grid-template-columns: minmax(0, 1fr);
+}
+.cw__tile {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(6px, 1.1vh, 18px) clamp(8px, 1vw, 22px);
+}
+.cw.is-light .cw__tile { border-color: rgba(28, 28, 29, 0.1); }
+.cw__tile.is-through { border-color: rgba(79, 197, 127, 0.4); }
+.cw__tilerow { align-items: center; display: flex; gap: clamp(7px, 0.9vw, 20px); min-width: 0; }
+.cw__tileimg {
+  border-radius: clamp(4px, 0.6vh, 12px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  flex: 0 0 auto;
+  height: clamp(30px, 5.2vh, 92px);
+  object-fit: cover;
+  width: clamp(30px, 5.2vh, 92px);
+}
+.cw__tileinit {
+  align-items: center;
+  background: var(--panel);
+  color: var(--dim);
+  display: flex;
+  font-size: clamp(12px, 2vh, 34px);
+  justify-content: center;
+}
+.cw__tilewho { display: flex; flex-direction: column; gap: 0.1em; min-width: 0; }
+.cw__tilewho b {
+  font-size: clamp(15px, 2.6vh, 48px);
+  font-weight: 450;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cw__tilewho i {
+  color: var(--dim);
+  font-size: clamp(10px, 1.6vh, 28px);
+  font-style: normal;
+}
+
+/* Two left: a face-off, not a list. */
+.cw__duel {
+  align-items: center;
+  display: flex;
+  gap: clamp(12px, 2.4vw, 60px);
+  justify-content: center;
+  padding: clamp(6px, 1.4vh, 26px) 0;
+}
+.cw__duelp {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.9vh, 16px);
+  min-width: 0;
+}
+.cw__duelp img,
+.cw__duelinit {
+  border-radius: clamp(4px, 0.6vh, 12px);
+  height: clamp(64px, 15vh, 240px);
+  object-fit: cover;
+  width: clamp(64px, 15vh, 240px);
+}
+.cw__duelinit {
+  align-items: center;
+  background: var(--panel);
+  color: var(--dim);
+  display: flex;
+  font-size: clamp(22px, 5vh, 90px);
+  justify-content: center;
+}
+.cw__duelp b {
+  font-size: clamp(18px, 3.4vh, 64px);
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+.cw__vs {
+  color: var(--dim);
+  font-size: clamp(14px, 2.4vh, 44px);
+  letter-spacing: 0.14em;
+}
+
+/* ── the champion ───────────────────────────────────────────────────────
+   One name, the size of the wall. */
+.cw__champ {
+  font-size: clamp(48px, 17vh, 300px);
+  font-weight: 450;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+.cw__champpnl {
+  font-size: clamp(20px, 4.4vh, 84px);
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+.cw__champpnl.is-up { color: var(--up); }
+.cw__champpnl.is-down { color: var(--down); }
+.cw__placings { display: grid; gap: .4em; list-style: none; margin: 0; padding: 0;
+  font-size: clamp(14px, 2.2vh, 40px); text-align: left; }
+.cw__placings li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5em; }
+.cw__placings span { color: var(--dim); }
+
+/* The money column carries its own sign colour on the series board, where
+   there is no separate score column to carry it. */
+.cw__acct.is-up { color: var(--up); }
+.cw__acct.is-down { color: var(--down); }
+.cw--stage .cw__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.cw--stage .cw__foot {
+  flex: 0 0 auto;
+}
+
+/* At four players the name scale is big enough that a seven-figure score at
+   the same size overran its fractional column and printed through the gap
+   beside it. The score and the gap size to their content now, and the score
+   sits a step under the name: the name is who, the score is how much, and
+   the eye should land on who first. */
+.cw__score { font-size: calc(var(--cw-name, 40px) * 0.85); white-space: nowrap; }
+
+/* ── the round's shape ───────────────────────────────────────────────────
+   Six beats in order under the header. The live one is lit in its own
+   colour, the played ones recede, and each carries what it is worth. */
+.cw__rail {
+  display: flex;
+  gap: clamp(3px, 0.4vw, 8px);
+  list-style: none;
+  margin: clamp(4px, 0.8vh, 14px) 0 0;
+  padding: 0;
+}
+.cw__railseg {
+  align-items: baseline;
+  border-radius: var(--frontier-radius-control, 4px);
+  background: var(--panel);
+  color: var(--dim);
+  display: flex;
+  flex: 1 1 0;
+  font-size: clamp(10px, 1.5vh, 26px);
+  gap: 0.6em;
+  justify-content: space-between;
+  letter-spacing: 0.08em;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.35em 0.7em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cw__railseg b { font-weight: 450; }
+/* The livestream board is narrow: the rail shows short labels and drops the sub-labels. */
+.cw__railshort { display: none; }
+.cw.is-stream .cw__raillong, .cw.is-stream .cw__railseg i { display: none; }
+.cw.is-stream .cw__railshort { display: inline; }
+.cw__railseg i { font-style: normal; opacity: 0.8; }
+.cw__railseg.is-done { opacity: 0.45; }
+.cw__railseg.is-now { color: #fff; }
+.cw__railseg.is-hot1.is-now,
+.cw__railseg.is-hot2.is-now { background: var(--hot); }
+.cw__railseg.is-boost.is-now { background: var(--down); }
+.cw__railseg.is-build1.is-now,
+.cw__railseg.is-build2.is-now,
+.cw__railseg.is-finalBuild.is-now { background: var(--dim); }
+
+/* Content-sized numeric columns: right-aligned inside their track, so the
+   sign and the decimal point line up down the board. */
+.cw__acct, .cw__bonus, .cw__score { justify-self: end; text-align: right; }
+.cw__pos { justify-self: start; }
+
+/* ── the race ─────────────────────────────────────────────────────────
+   One chart in place of the board: every seat's score as a line through
+   the round, labels at the line ends, the Hot and Boost moments marked. */
+.cw__race { flex: 1; margin-top: clamp(8px, 1.4vh, 24px); min-height: 0; position: relative; }
+.cw__race svg { display: block; height: 100%; width: 100%; }
+.cw__racegrid { stroke: var(--line); stroke-width: 1; }
+.cw__racezero { stroke: rgba(244, 242, 239, 0.35); stroke-width: 1; }
+.cw__raceax { fill: var(--dim); font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
+.cw__racenow { stroke: rgba(244, 242, 239, 0.25); stroke-dasharray: 4 6; stroke-width: 1; }
+.cw__racemark { stroke-dasharray: 6 6; stroke-width: 2; }
+.cw__racemark.is-hot { stroke: var(--hot); }
+.cw__racemark.is-boost { stroke: var(--down); }
+.cw__racemarkl { font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+.cw__racemarkl.is-hot { fill: var(--hot); }
+.cw__racemarkl.is-boost { fill: var(--down); }
+.cw__racelbl { font-variant-numeric: tabular-nums; font-weight: 450; }
+.cw.is-light .cw__racezero { stroke: rgba(28, 28, 29, 0.35); }
+.cw.is-light .cw__racenow { stroke: rgba(28, 28, 29, 0.25); }
+
+/* ── the result ───────────────────────────────────────────────────────
+   One loud thing per row, the score. The tag is small text beside the
+   name, the bar a thin underline that gives the gap at a glance. Seats
+   that are out recede. */
+.cw__namecell { display: flex; flex-direction: column; gap: 0.28em; min-width: 0; font-size: var(--cw-name, 40px); }
+.cw__nameline { align-items: baseline; display: flex; gap: 0.5em; min-width: 0; }
+.cw__nameline .cw__name { font-size: 1em; }
+.cw__nameline .cw__tag { background: none; border-radius: 0; font-size: clamp(11px, 1.7vh, 26px); font-weight: 500; letter-spacing: 0.1em; padding: 0; }
+.cw__nameline .cw__tag.is-through { color: var(--up); }
+.cw__nameline .cw__tag.is-out { color: var(--dim); }
+.cw__nameline .cw__tag.is-champ { background: var(--up); border-radius: 3px; color: #0e0d0c; padding: 0.1em 0.5em; }
+.cw__bar { background: var(--line); border-radius: 999px; display: block; height: 0.07em; overflow: hidden; width: min(100%, 16em); }
+.cw__barfill { border-radius: 999px; display: block; height: 100%; opacity: 0.85; }
+.cw__barfill.is-up { background: var(--up); }
+.cw__barfill.is-down { background: var(--down); }
+.cw__row.is-out .cw__name, .cw__row.is-out .cw__rank, .cw__row.is-out .cw__score { opacity: 0.55; }
+.cw__row.is-out .cw__facei { filter: saturate(0.3); opacity: 0.6; }
+.cw--stage.is-result .cw__winner { font-size: clamp(16px, 2.6vh, 44px); }
+
+/* ── the Hot layout ────────────────────────────────────────────────────
+   The asset as the headline; the hot PnL as each seat's big number, ranked
+   by it, with the round score kept small beneath. */
+.cw__phase--hot { align-items: center; display: flex; font-size: clamp(30px, 6.2vh, 112px); font-weight: 450; gap: 0.32em; letter-spacing: -0.03em; line-height: 1; text-transform: uppercase; }
+/* The asset is a badge, not a word: ink block, the orange showing through
+   the letters, a size up from the sentence beside it. */
+.cw__phase--hot b { background: var(--ink); border-radius: 0.08em; color: #eb8435; font-size: 1.3em; font-weight: 700; letter-spacing: -0.02em; line-height: 1; padding: 0.06em 0.22em 0.1em; }
+.cw__score--hot { align-items: flex-end; display: flex; flex-direction: column; line-height: 1; }
+.cw__score--hot b { font-weight: 450; }
+.cw__score--hot i { color: var(--dim); font-size: var(--cw-sub, clamp(11px, 1.5vh, 26px)); font-style: normal; font-weight: 500; letter-spacing: 0.08em; margin-top: 0.4em; text-transform: uppercase; }
+
+/* ── the Boost room ──────────────────────────────────────────────────────
+   The whole wall goes Boost red for the last minutes, the way it goes Hot
+   orange, and like the Hot wall it is set in ink: names, scores and the
+   headline block all dark on the red. Green and red numbers cannot be read
+   on red, so gains are plain ink and a loss is the wall's own red on an ink chip. */
+.cw.is-boost {
+  --ink: #14100f;
+  --dim: rgba(20, 16, 15, 0.62);
+  --line: rgba(20, 16, 15, 0.2);
+  --panel: rgba(20, 16, 15, 0.1);
+  --up: #14100f;
+  --down: #14100f;
+  --hot: #14100f;
+  animation: cw-boost-pulse 2.4s ease-in-out infinite;
+  background: #d9403c;
+  color: var(--ink);
+}
+@keyframes cw-boost-pulse { 0%, 100% { background-color: #d9403c; } 50% { background-color: #c8322f; } }
+@media (prefers-reduced-motion: reduce) { .cw.is-boost { animation: none; } }
+.cw.is-boost .cw__head { border-bottom-color: rgba(20, 16, 15, 0.35); }
+.cw.is-boost .cw__phase, .cw.is-boost .cw__clock { color: var(--ink); }
+.cw.is-boost .cw__railseg.is-now { background: var(--ink); color: #d9403c; }
+.cw.is-boost .cw__face { background: rgba(20, 16, 15, 0.1); border-color: rgba(20, 16, 15, 0.3); }
+.cw.is-boost .cw__tag.is-boost { background: var(--ink); color: #d9403c; }
+.cw.is-boost .cw__score.is-down { background: var(--ink); border-radius: 0.14em; color: #d9403c; padding: 0 0.22em; }
+.cw.is-boost .cw__stale { background: rgba(20, 16, 15, 0.85); color: #d9403c; }
+.cw.is-boost .cw__phase--boost b { background: var(--ink); color: #d9403c; }
+
+/* Losses on the Hot wall. Scores are ink on the orange, so a loss has only
+   its minus sign to tell it apart; give it the inverse of the Boost chip:
+   orange on an ink block. The stacked hot score chips its big number only. */
+.cw.is-hot .cw__score--hot.is-down b,
+.cw.is-hot .cw__score.is-down:not(.cw__score--hot),
+.cw.is-hotWarning .cw__score.is-down { background: var(--ink); border-radius: 0.14em; color: #eb8435; padding: 0 0.22em; }
+
+/* The Boost chart. The room is red and the headline says 500×, but the chart
+   itself sits on a dark panel so the seat colours stay theirs and the lines
+   read from the back of the room. */
+.cw.is-boost .cw__race { background: #14100f; border-radius: clamp(6px, 0.8vh, 14px); padding: clamp(6px, 1vh, 16px) clamp(8px, 1.2vw, 24px); }
+.cw.is-boost .cw__racezero { stroke: rgba(244, 242, 239, 0.35); }
+.cw.is-boost .cw__racenow { stroke: rgba(244, 242, 239, 0.25); }
+.cw.is-boost .cw__racegrid { stroke: rgba(244, 242, 239, 0.1); }
+.cw.is-boost .cw__raceax { fill: #8e8c89; }
+.cw.is-boost .cw__racemark.is-hot { stroke: #eb8435; }
+.cw.is-boost .cw__racemarkl.is-hot { fill: #eb8435; }
+.cw__raceboost { fill: rgba(217, 64, 60, 0.16); }
+
+/* ── liquidation flash ───────────────────────────────────────────────────── */
+.cw__liq {
+  align-items: center;
+  animation: cw-liq-in 180ms ease-out, cw-liq-pulse 900ms ease-in-out 180ms 2;
+  background: #b3261e;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6vh, 24px);
+  inset: 0;
+  justify-content: center;
+  position: fixed;
+  text-align: center;
+  z-index: 40;
+}
+.cw__liqface { border-radius: clamp(4px, 0.6vh, 12px); height: clamp(120px, 26vh, 360px); overflow: hidden; width: clamp(120px, 26vh, 360px); background: #7a1912; display: flex; align-items: center; justify-content: center; font-size: clamp(40px, 9vh, 120px); }
+.cw__liqface img { display: block; height: 100%; object-fit: cover; width: 100%; }
+.cw__liqword { font-size: clamp(48px, 14vh, 200px); font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; text-transform: uppercase; }
+.cw__liqwho { font-size: clamp(20px, 4.4vh, 64px); opacity: 0.92; }
+.cw__liqpnl { font-size: clamp(28px, 7vh, 110px); font-variant-numeric: tabular-nums; font-weight: 700; }
+@keyframes cw-liq-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+@keyframes cw-liq-pulse { 0%, 100% { background: #b3261e; } 50% { background: #d93a30; } }
+
+/* ── the final, one against one: the board, two rows, and the gap line ──── */
+.cw__duelline { align-items: baseline; display: flex; font-size: var(--cw-sub); gap: 0.5em; justify-content: center; padding: clamp(6px, 1.2vh, 20px) 0 clamp(4px, 0.8vh, 12px); }
+.cw__duelline i { color: var(--dim); font-style: normal; }
+.cw__duelline b { font-variant-numeric: tabular-nums; font-weight: 700; }
+/* Two rows at final size: the rank digit outgrows the fixed rank column, so it sizes to content. */
+.cw.is-duel .cw__board { grid-template-columns: max-content calc(var(--cw-name, 40px) * 1.05) minmax(0, 1fr) max-content max-content; }
+
+/* ── the Hot reveal ──────────────────────────────────────────────────────── */
+.cw__reveal { align-items: center; animation: cw-reveal-pulse 1s ease-in-out infinite; background: rgba(14, 13, 12, 0.92); color: #eb8435; display: flex; flex-direction: column; gap: clamp(4px, 1vh, 16px); inset: 0; justify-content: center; position: fixed; text-align: center; z-index: 30; }
+.cw__revealk { font-size: clamp(18px, 3.6vh, 56px); letter-spacing: 0.18em; text-transform: uppercase; }
+.cw__revealn { font-size: clamp(120px, 42vh, 620px); font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -0.04em; line-height: 0.9; }
+.cw__reveals { color: rgba(235, 132, 53, 0.75); font-size: clamp(14px, 2.6vh, 40px); }
+@keyframes cw-reveal-pulse { 0%, 100% { background: rgba(14, 13, 12, 0.92); } 50% { background: rgba(40, 24, 10, 0.94); } }
+.cw__slam { align-items: center; animation: cw-slam-in 220ms cubic-bezier(.2,.9,.2,1), cw-slam-out 300ms ease-in 1500ms forwards; background: #eb8435; color: #0e0d0c; display: flex; flex-direction: column; gap: clamp(6px, 1.6vh, 24px); inset: 0; justify-content: center; position: fixed; text-align: center; z-index: 35; }
+.cw__slama { font-size: clamp(120px, 40vh, 600px); font-weight: 700; letter-spacing: -0.04em; line-height: 0.9; }
+.cw__slamb { font-size: clamp(20px, 4.4vh, 64px); letter-spacing: 0.06em; text-transform: uppercase; }
+@keyframes cw-slam-in { from { opacity: 0; transform: scale(1.35); } to { opacity: 1; transform: none; } }
+@keyframes cw-slam-out { to { opacity: 0; } }
+
+/* ── the Boost tape ──────────────────────────────────────────────────────── */
+
+/* ── rank moves ──────────────────────────────────────────────────────────── */
+.cw__move { display: inline-block; font-size: 0.55em; font-style: normal; margin-left: 0.25em; vertical-align: middle; animation: cw-move-fade 2.2s ease-out forwards; }
+.cw__move.is-up { color: var(--up); }
+.cw__move.is-down { color: var(--down); }
+.cw__row.is-moved-up { animation: cw-row-up 700ms ease-out; }
+.cw__row.is-moved-down { animation: cw-row-down 700ms ease-out; }
+@keyframes cw-move-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cw-row-up { from { background: rgba(79, 197, 127, 0.22); } to { background: transparent; } }
+@keyframes cw-row-down { from { background: rgba(255, 98, 89, 0.18); } to { background: transparent; } }
+
+/* ── the sealed draw ─────────────────────────────────────────────────────── */
+
+/* ── the recap strip on the result ───────────────────────────────────────── */
+.cw__recap { align-items: baseline; background: var(--panel); border-radius: clamp(8px, 1.2vh, 18px); display: flex; flex-wrap: wrap; gap: clamp(12px, 2vw, 48px); margin: clamp(8px, 1.4vh, 20px) 0 clamp(4px, 0.8vh, 12px); padding: clamp(8px, 1.2vh, 20px) clamp(12px, 1.4vw, 28px); }
+.cw__recapl { color: var(--dim); font-size: clamp(11px, 1.9vh, 28px); letter-spacing: 0.14em; text-transform: uppercase; }
+.cw__recap span span, .cw__recap > span:not(.cw__recapl) { display: inline-flex; flex-direction: column; gap: 0.1em; }
+.cw__recap > span:not(.cw__recapl) i { color: var(--dim); font-size: clamp(10px, 1.6vh, 24px); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; }
+.cw__recap > span:not(.cw__recapl) b { font-size: clamp(16px, 3vh, 46px); font-variant-numeric: tabular-nums; }
+
+/* ── the Boost count and slam, red like the Boost wall ───────────────────── */
+.cw__reveal.is-boost { animation-name: cw-reveal-pulse-red; color: #ff6259; }
+.cw__reveal.is-boost .cw__reveals { color: rgba(255, 98, 89, 0.75); }
+@keyframes cw-reveal-pulse-red { 0%, 100% { background: rgba(14, 13, 12, 0.92); } 50% { background: rgba(48, 12, 10, 0.94); } }
+.cw__slam.is-boost { background: #d6382f; color: #0e0d0c; }
+
+/* ── livestream mode: board in the middle, seat frames in the corners ─────── */
+.cw.is-stream { --cam: min(21vw, 36vh); padding-left: calc(var(--cam) + clamp(28px, 3vw, 72px)); padding-right: calc(var(--cam) + clamp(28px, 3vw, 72px)); }
+.cw.is-stream2 { --cam: min(22vw, 52vh); }
+/* Above every full-screen moment: the camera mix keys on these frames, so nothing may paint over them. */
+.cw__cam { position: fixed; width: var(--cam); display: flex; flex-direction: column; gap: clamp(6px, 1vh, 14px); z-index: 60; }
+.cw__cam.is-tl { left: clamp(14px, 1.4vw, 36px); top: clamp(14px, 2vh, 40px); }
+.cw__cam.is-tr { right: clamp(14px, 1.4vw, 36px); top: clamp(14px, 2vh, 40px); }
+.cw__cam.is-bl { left: clamp(14px, 1.4vw, 36px); bottom: clamp(14px, 2vh, 40px); }
+.cw__cam.is-br { right: clamp(14px, 1.4vw, 36px); bottom: clamp(14px, 2vh, 40px); }
+.cw__cam.is-l { left: clamp(14px, 1.4vw, 36px); top: 50%; transform: translateY(-50%); }
+.cw__cam.is-r { right: clamp(14px, 1.4vw, 36px); top: 50%; transform: translateY(-50%); }
+.cw__camframe { aspect-ratio: 1; background: var(--panel); border: 2px solid var(--line); border-radius: clamp(8px, 1.2vh, 18px); display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; font-size: clamp(28px, 6vh, 90px); color: var(--dim); }
+.cw__camframe img { display: block; height: 100%; object-fit: cover; width: 100%; filter: saturate(0.85); }
+.cw__cam.is-chroma .cw__camframe { background: #00ff00; border-color: #00ff00; }
+.cw__camplate { align-items: baseline; display: flex; justify-content: space-between; gap: 0.6em; }
+.cw__camname { font-size: clamp(14px, 2.6vh, 40px); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw__camname i { color: var(--dim); font-style: normal; font-weight: 400; margin-right: 0.45em; }
+.cw__camscore { font-size: clamp(14px, 2.6vh, 40px); font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.cw__camscore.is-up { color: var(--up); }
+.cw__camscore.is-down { color: var(--down); }
+.cw.is-hot .cw__camscore, .cw.is-boost .cw__camscore, .cw.is-hotWarning .cw__camscore { color: var(--ink); }
+/* Faces stay in the rows in livestream mode too: the board reads on its own
+   even when the camera frames are covered by the stream mix. */
+.cw.is-stream .cw__board { grid-template-columns: auto calc(var(--cw-name, 40px) * 1.05) minmax(0, 1fr) auto auto; }
+
+/* ── the safe area: the bottom of the LED is behind the desks ─────────────── */
+:root { --safe: 0px; }
+.cw.is-safe { padding-bottom: calc(var(--safe) + clamp(12px, 1.6vh, 30px)); }
+/* The hidden strip is black on every screen, whatever colour the screen is, so
+   nothing glows out from behind the desks. */
+.cw.is-safe::after { background: #000; bottom: 0; content: ""; height: var(--safe); left: 0; pointer-events: none; position: fixed; right: 0; z-index: 70; }
+.cw.is-safe .cw__reveal, .cw.is-safe .cw__slam, .cw.is-safe .cw__liq { padding-bottom: var(--safe); }
+.cw.is-safe .cw__cam.is-bl, .cw.is-safe .cw__cam.is-br { bottom: calc(var(--safe) + clamp(14px, 2vh, 40px)); }
+.cw.is-safe .cw__cam.is-l, .cw.is-safe .cw__cam.is-r { top: calc((100vh - var(--safe)) / 2); }
+/* Set on the root, not the frame, so the board's side padding follows the smaller frames. */
+.cw.is-safe.is-stream { --cam: min(21vw, calc((100vh - var(--safe)) * 0.33)); }
+.cw.is-safe.is-stream2 { --cam: min(22vw, calc((100vh - var(--safe)) * 0.52)); }
+/* Narrower frames: the plate stacks the name over the score instead of truncating the name. */
+.cw.is-safe .cw__camplate { align-items: flex-start; flex-direction: column; gap: 0; }
+.cw.is-safe .cw__camname { max-width: 100%; }
+.cw.is-safe .cw__camname, .cw.is-safe .cw__camscore { font-size: clamp(13px, 2.2vh, 32px); line-height: 1.15; }
+
+:root{--safe:30vh !important}
+/* documentation only: the camera frames drawn as what they are */
+.cw__camframe.doc-cam { background: #16 1514; background: #161514; border: 2px dashed rgba(244,242,239,0.4); color: rgba(244,242,239,0.75); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3em; letter-spacing: 0.14em; text-transform: uppercase; font-size: clamp(12px, 2.2vh, 34px); }
+.cw__camframe.doc-cam b { font-weight: 700; font-size: 1.25em; letter-spacing: 0.18em; }
+.cw.is-hot .cw__camframe.doc-cam, .cw.is-boost .cw__camframe.doc-cam { background: rgba(14,13,12,0.55); color: rgba(14,13,12,0.85); border-color: rgba(14,13,12,0.45); }
+</style><div class="cw is-safe cw--stage is-announce is-stream"><div class="cw__cam is-tl"><div class="cw__camframe doc-cam"><b>Camera</b><span>seat 1</span></div><div class="cw__camplate"><span class="cw__camname">Vulekinder</span></div></div><div class="cw__cam is-tr"><div class="cw__camframe doc-cam"><b>Camera</b><span>seat 2</span></div><div class="cw__camplate"><span class="cw__camname">Sailor</span></div></div><div class="cw__cam is-bl"><div class="cw__camframe doc-cam"><b>Camera</b><span>seat 3</span></div><div class="cw__camplate"><span class="cw__camname">Dostoevsky</span></div></div><div class="cw__cam is-br"><div class="cw__camframe doc-cam"><b>Camera</b><span>seat 4</span></div><div class="cw__camplate"><span class="cw__camname">inno</span></div></div><div class="cw__ann"><div class="cw__annl">
+<div class="cw__pills"><span class="cw__pill is-on"><i class="cw__dot"></i>Frontier Traders</span><span class="cw__pill">Belgrade</span></div>
+<h1 class="cw__annh">Round 1 starts soon</h1><div class="cw__anncd"><span class="cw__annkick">Starts in</span><span class="cw__anncl">4:32</span></div><div class="cw__sched"><span class="cw__schedrow is-now"><span>Round 1</span><b></b></span><span class="cw__schedrow"><span>Round 2</span><b></b></span><span class="cw__schedrow"><span>Semi-finals</span><b></b></span><span class="cw__schedrow"><span>The Final</span><b></b></span></div></div>
+<div class="cw__annr"><div class="cw__heat"><div class="cw__band">ROUND 1, TOP 2 ADVANCE</div><div class="cw__tiles"><span class="cw__tile"><span class="cw__tilerow"><img alt="" class="cw__tileimg" src="faces/solana_sailor.jpg"><span class="cw__tilewho"><b>Sailor</b><i></i></span></span></span><span class="cw__tile"><span class="cw__tilerow"><img alt="" class="cw__tileimg" src="faces/dstvsy.jpg"><span class="cw__tilewho"><b>Dostoevsky</b><i></i></span></span></span><span class="cw__tile"><span class="cw__tilerow"><img alt="" class="cw__tileimg" src="faces/inno_sol.jpg"><span class="cw__tilewho"><b>inno</b><i></i></span></span></span><span class="cw__tile"><span class="cw__tilerow"><img alt="" class="cw__tileimg" src="faces/vulekinder.jpg"><span class="cw__tilewho"><b>Vulekinder</b><i></i></span></span></span></div><div class="cw__seal"><span class="cw__sealk">Draw sealed</span><span class="cw__sealh">9f3c1a7e2b…c41d0e77</span><span class="cw__seals">Both Hot assets and both instants were drawn from one seed before the bell. The seed is published after the round.</span></div></div></div></div></div><div style="position:fixed;left:0;right:0;bottom:0;height:30vh;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 12px,transparent 12px 24px);border-top:2px dashed rgba(244,242,239,.35);pointer-events:none;z-index:99"></div>

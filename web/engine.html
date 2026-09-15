@@ -1,0 +1,543 @@
+<title>Frontier Traders Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root {
+    --ground: #FBF8F4;
+    --surface: #FFFFFF;
+    --ink: #1C1C1D;
+    --muted: #6F6A63;
+    --rule: #E4DCD1;
+    --hot: #C4611B;
+    --hot-wash: rgba(235, 132, 53, 0.16);
+    --boost: #C0392F;
+    --boost-wash: rgba(224, 72, 63, 0.14);
+    --up: #2C8F5F;
+    --shadow: 0 1px 2px rgba(28, 28, 29, .05), 0 8px 24px rgba(28, 28, 29, .05);
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #171614;
+      --surface: #1F1D1A;
+      --ink: #F2EEE8;
+      --muted: #A49C91;
+      --rule: #332E28;
+      --hot: #F0965A;
+      --hot-wash: rgba(235, 132, 53, 0.20);
+      --boost: #F0776C;
+      --boost-wash: rgba(224, 72, 63, 0.18);
+      --up: #5CC38C;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #171614;
+    --surface: #1F1D1A;
+    --ink: #F2EEE8;
+    --muted: #A49C91;
+    --rule: #332E28;
+    --hot: #F0965A;
+    --hot-wash: rgba(235, 132, 53, 0.20);
+    --boost: #F0776C;
+    --boost-wash: rgba(224, 72, 63, 0.18);
+    --up: #5CC38C;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 19px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1016px; margin: 0 auto; padding: 0 28px 96px; }
+  .col { max-width: 960px; margin-left: auto; margin-right: auto; }
+  h1, h2, h3, .eyebrow, .chip, th, .num { font-family: var(--display); }
+
+  /* Masthead */
+  header.mast { max-width: 960px; margin: 0 auto 4px; padding: 72px 0 34px; border-bottom: 2px solid var(--ink); }
+  .kicker {
+    font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 20px;
+  }
+  h1 {
+    font-size: clamp(40px, 6.2vw, 68px); line-height: 1.02; font-weight: 700;
+    letter-spacing: -.026em; margin: 0 0 20px; text-wrap: balance; max-width: 15ch;
+  }
+  .standfirst { font-size: 22px; line-height: 1.5; color: var(--muted); max-width: 66ch; margin: 0; }
+  .mast-meta {
+    display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 28px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--muted);
+  }
+  .mast-meta b { color: var(--ink); font-weight: 500; }
+
+  /* Sections */
+  section { padding-top: 64px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--hot); margin: 0 0 10px;
+  }
+  h2 {
+    font-size: clamp(27px, 3.2vw, 36px); line-height: 1.14; font-weight: 700;
+    letter-spacing: -.018em; margin: 0 0 14px; text-wrap: balance;
+  }
+  h3 {
+    font-size: 19px; font-weight: 600; letter-spacing: -.005em; margin: 34px 0 8px;
+  }
+  p { margin: 0 0 16px; }
+  .lede { font-size: 21px; color: var(--muted); margin-bottom: 26px; max-width: 70ch; }
+  ul { margin: 0 0 18px; padding-left: 20px; }
+  li { margin-bottom: 8px; }
+  strong { font-weight: 600; }
+  code, .m { font-family: var(--mono); font-size: .88em; }
+
+  /* Figures */
+  figure { margin: 34px auto 8px; }
+  figure img {
+    display: block; width: 100%; height: auto; border: 1px solid var(--rule);
+    border-radius: 6px; box-shadow: var(--shadow); background: var(--surface);
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--muted);
+    margin-top: 12px; max-width: 110ch;
+  }
+  figcaption b { color: var(--ink); font-weight: 500; }
+  .fig-wide { max-width: 960px; margin-left: auto; margin-right: auto; }
+  .fig-narrow { max-width: 620px; margin-left: 0; margin-right: auto; }
+
+  /* Round timeline */
+  .timeline { max-width: 960px; margin: 30px auto 6px; }
+  .timeline svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  /* Data table */
+  .tablewrap { overflow-x: auto; margin: 26px auto 8px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--display); font-size: 15px; }
+  th, td { text-align: left; padding: 11px 16px 11px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink);
+  }
+  td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Callouts */
+  .note {
+    border-left: 3px solid var(--hot); background: var(--hot-wash);
+    padding: 16px 20px; margin: 26px 0; border-radius: 0 5px 5px 0;
+  }
+  .note.cold { border-left-color: var(--muted); background: transparent; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); border-radius: 0; }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--hot); display: block; margin-bottom: 6px;
+  }
+  .note.cold .label { color: var(--muted); }
+
+  /* Not-built list */
+  .notbuilt { margin: 24px 0; padding: 0; list-style: none; }
+  .notbuilt li {
+    font-family: var(--display); font-size: 15px; padding: 10px 0 10px 26px;
+    border-bottom: 1px solid var(--rule); position: relative; margin: 0;
+  }
+  .notbuilt li::before {
+    content: "\00d7"; position: absolute; left: 4px; top: 9px;
+    font-family: var(--mono); color: var(--boost); font-size: 15px;
+  }
+  .notbuilt li b { font-weight: 600; }
+
+  /* Phase chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 4px; padding: 0; list-style: none; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 6px 11px; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); margin: 0;
+  }
+  .chip.hot { color: var(--hot); border-color: var(--hot); background: var(--hot-wash); }
+  .chip.boost { color: var(--boost); border-color: var(--boost); background: var(--boost-wash); }
+
+  footer {
+    margin-top: 84px; padding-top: 26px; border-top: 2px solid var(--ink);
+    font-family: var(--mono); font-size: 12px; line-height: 1.7; color: var(--muted);
+  }
+  @media (max-width: 700px) {
+    body { font-size: 17px; }
+    .wrap { padding: 0 18px 64px; }
+    header.mast { padding-top: 46px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="col">
+  <div class="kicker">Frontier Traders World Cup</div>
+  <h1>The engine behind a stop</h1>
+  <p class="standfirst">Eight traders, three rounds of thirty minutes and a twenty-minute final, one champion. What the software does.</p>
+  <div class="mast-meta">
+    <span>Updated <b>14 September 2026</b></span>
+    <span>Applies to <b>Seoul, Singapore, London</b></span>
+    <span>Wall figures <b>rendered at venue size</b></span>
+  </div>
+  </div>
+</header>
+
+<div class="col">
+<section>
+  <div class="col">
+    <p class="eyebrow">The game</p>
+    <h2>One screen of rules</h2>
+    <p>Every stop after Belgrade is played on paper, on our own engine. Real terminal, real prices, real liquidations, no real money. Three rules make it a game:</p>
+    <ul>
+      <li>Every round is thirty minutes. The Final is twenty.</li>
+      <li>Twice a round, one asset scores double for two minutes.</li>
+      <li>The last three minutes are at 500x.</li>
+    </ul>
+    <p>Eight traders. Round 1 seats four, top two go through. Round 2 seats the other four, top two go through. The semifinal seats those four, top two go through. The final is one against one. Everyone starts every round with $100,000 at up to 100x.</p>
+    <p>The score is account PnL plus the Hot bonus. Account PnL is equity at the bell minus the starting balance; open and closed positions count the same, and a trader who busts is scored at the real loss. Per stop the champion takes $2,500, the runner up $1,500, third $1,000. The two semifinal losers are ranked by their semifinal PnL and only the higher one is paid.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">The game</p>
+    <h2>The round</h2>
+    <p>Every round follows the same shape. Heats and the semi-final run thirty minutes; the Final runs twenty, with the same two-minute Hot Markets and three-minute Boost and shorter build stretches between them.</p>
+    <div class="timeline"><svg viewBox="0 0 1000 170" role="img" aria-label="A thirty minute round. The rule: build, a Hot Market that can fire anywhere between 3:15 and 10:00 and runs two minutes, build, a second Hot that can fire between 13:00 and 20:00, final build, and the 500x Boost from 27:00 to the bell. One example night shows the two Hots landing at 5:30 and 16:12.">
+<defs><pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="var(--hot-wash)"/><line x1="0" y1="0" x2="0" y2="7" stroke="var(--hot)" stroke-width="1.6" opacity=".55"/></pattern></defs>
+<text x="44" y="26" font-family="var(--mono)" font-size="10" letter-spacing="1.2" fill="var(--muted)">THE RULE, EVERY ROUND</text>
+<text x="44" y="103" font-family="var(--mono)" font-size="10" letter-spacing="1.2" fill="var(--muted)">ONE NIGHT, AS IT HAPPENED</text>
+<rect x="44.0" y="34" width="924.0" height="30" rx="3" fill="var(--rule)"/>
+<rect x="144.1" y="34" width="207.9" height="30" rx="3" fill="url(#hatch)" stroke="var(--hot)" stroke-width="1.2" opacity="1"/>
+<rect x="444.4" y="34" width="215.6" height="30" rx="3" fill="url(#hatch)" stroke="var(--hot)" stroke-width="1.2" opacity="1"/>
+<rect x="875.6" y="34" width="92.4" height="30" rx="3" fill="var(--boost)" opacity="1"/>
+<text x="94.1" y="53" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="500" letter-spacing="1" fill="var(--muted)">BUILD</text>
+<text x="248.1" y="53" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" letter-spacing="1" fill="var(--hot)">HOT 1 CAN FIRE 3:15 TO 10:00</text>
+<text x="398.2" y="53" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="500" letter-spacing="1" fill="var(--muted)">BUILD</text>
+<text x="552.2" y="53" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" letter-spacing="1" fill="var(--hot)">HOT 2 CAN FIRE 13:00 TO 20:00</text>
+<text x="767.8" y="53" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="500" letter-spacing="1" fill="var(--muted)">FINAL BUILD</text>
+<text x="921.8" y="53" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" letter-spacing="1" fill="var(--ground)">500X BOOST</text>
+<rect x="44.0" y="110" width="924.0" height="30" rx="3" fill="var(--rule)"/>
+<rect x="213.4" y="110" width="61.6" height="30" rx="3" fill="var(--hot)" opacity="1"/>
+<rect x="543.0" y="110" width="61.6" height="30" rx="3" fill="var(--hot)" opacity="1"/>
+<rect x="875.6" y="110" width="92.4" height="30" rx="3" fill="var(--boost)" opacity="1"/>
+<text x="244.2" y="129" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" letter-spacing="1" fill="var(--ground)">SOL HOT</text>
+<text x="573.8" y="129" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" letter-spacing="1" fill="var(--ground)">ETH HOT</text>
+<text x="921.8" y="129" text-anchor="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" letter-spacing="1" fill="var(--ground)">500X BOOST</text>
+<text x="244.2" y="156" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--hot)">fired at 5:30, two minutes</text>
+<text x="573.8" y="156" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--hot)">fired at 16:12, two minutes</text>
+<text x="921.8" y="156" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--boost)">always 27:00 to the bell</text>
+<line x1="44.0" y1="70" x2="44.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="44.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">0</text>
+<line x1="198.0" y1="70" x2="198.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="198.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">5</text>
+<line x1="352.0" y1="70" x2="352.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="352.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">10</text>
+<line x1="506.0" y1="70" x2="506.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="506.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">15</text>
+<line x1="660.0" y1="70" x2="660.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="660.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">20</text>
+<line x1="814.0" y1="70" x2="814.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="814.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">25</text>
+<line x1="968.0" y1="70" x2="968.0" y2="76" stroke="var(--muted)" stroke-width="1" opacity=".6"/>
+<text x="968.0" y="90" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--muted)">30</text>
+<text x="985" y="90" text-anchor="start" font-family="var(--mono)" font-size="9" letter-spacing="1" fill="var(--muted)">MIN</text>
+</svg></div>
+    <p>Top row: the rule, published before the bell. Bottom row: one night as it happened. A Hot Market fires once inside each hatched window, at an instant drawn and sealed before the bell, and runs two minutes. Which asset and which instant stay secret until it fires. The Boost is the same every round.</p>
+    <h3>Pauses</h3>
+    <p>The round clock is active time. If the engine cannot price the field, it holds the clock for everyone and the round still gets its full length. A pause is the only thing that moves the schedule.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">The game</p>
+    <h2>Hot Markets</h2>
+    <p><b>Twice a round, one asset scores double for two minutes.</b> The first fires between 3:15 and 10:00, the second between 13:00 and 20:00, always a different asset. The room gets fifteen seconds of warning without the name.</p>
+    <p>Only the score doubles. The gains and losses on the hot asset count twice in the score, and nowhere else. Equity, margin and liquidation prices stay as they are, so the bonus cannot liquidate anyone.</p>
+    <p>The draw happens before the bell. One seed decides both assets, both instants, and a fallback for the case where a market cannot be priced at its moment. The hash of the seed is published at the start bell and the seed itself after the round, so anyone can check the draw. The desk cannot change which asset goes hot.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">The game</p>
+    <h2>500x Boost</h2>
+    <p><b>The last three minutes open at 500x for everyone at once.</b> At minute 27 a second ticker appears for BTC, ETH, SOL and XRP at 500x. Ordinary tickers stay at 100x. There is nothing to buy or switch on: the window is open for everyone.</p>
+    <p>Buying power in the window is equity times 500 and moves with equity. There is no separate Boost bankroll.</p>
+    <p>Boost tickers are isolated margin, as is every position on a competition account. At 500x the liquidation distance is about five basis points, so a bad tick costs the stake on that trade, not the round.</p>
+    <p>If a market cannot be priced well enough when the window opens, the engine leaves it out and records why. At least two of the four must open or the segment does not run.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">The traders</p>
+    <h2>The terminal</h2>
+    <p>Each seat trades on a terminal that shows the chart, the ticket, positions, trade history, the stage line, and the seat's own standing: rank, score, round clock, gap to the leader. It explains the seat's own score; the wall does not.</p>
+    <p>Practice accounts can fill any empty seat, so a full round can be rehearsed solo at double speed. Every terminal screenshot here came from one.</p>
+  </div>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-01-d323d3ac.avif"><source type="image/webp" srcset="figures/fig-01-d323d3ac.webp"><img src="figures/fig-01-d323d3ac.jpg" alt="" width="1200" height="769" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The terminal.</b> Chart, ticket, position, and the seat's standing. From a practice round with eight seats; a heat seats four.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-02-7661c421.avif"><source type="image/webp" srcset="figures/fig-02-7661c421.webp"><img src="figures/fig-02-7661c421.jpg" alt="" width="1200" height="146" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The stage line.</b> It names the hot asset and counts the window down. In the last minutes it turns red and lists the four Boost tickers.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-03-65c65f21.avif"><source type="image/webp" srcset="figures/fig-03-65c65f21.webp"><img src="figures/fig-03-65c65f21.jpg" alt="" width="1200" height="769" loading="lazy" decoding="async"></picture>
+    <figcaption><b>ETH is hot.</b> The strip names it, counts the window down and offers one tap to switch. This trader is holding SOL.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-04-d3fb75f2.avif"><source type="image/webp" srcset="figures/fig-04-d3fb75f2.webp"><img src="figures/fig-04-d3fb75f2.jpg" alt="" width="1200" height="769" loading="lazy" decoding="async"></picture>
+    <figcaption><b>Boost.</b> The page turns red and the strip lists the four Boost markets, one tap each. Positions run to the bell, where the engine closes them.</figcaption>
+  </figure>
+  <figure class="fig-narrow">
+    <picture><source type="image/avif" srcset="figures/fig-05-6c622bc3.avif"><source type="image/webp" srcset="figures/fig-05-6c622bc3.webp"><img src="figures/fig-05-6c622bc3.jpg" alt="" width="540" height="126" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The seat's card.</b> Rank, score, time left, the leader, and whoever is chasing.</figcaption>
+  </figure>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">The night</p>
+    <h2>Screen by screen</h2>
+    <p>The wall shows one thing at a time. This is the evening in the order it runs, one figure per screen. Every in-round figure is rendered at the venue's size, 2620 by 1310, in livestream mode with the safe area on, which is how the wall runs during a round at a stop.</p>
+    <p><b>The four frames in the corners are camera positions.</b> They are where the stream mix puts each seat's live camera, with the seat's name and live score on a plate under it. They are fixed to seats, not to rank, so a camera never has to move. On this page they are drawn as placeholders; on a wall with no mixer they hold the seat's picture so the layout still reads. The hatched band at the bottom is the part of the screen the desks hide; the wall paints it black.</p>
+    <p>The wall shows rank, face, name, the market each seat is in, and one score. It does not show side, leverage or liquidation distance, so nobody in the room can trade against a rival from the screen. Faces are square everywhere, the same shape as the camera frames.</p>
+  </div>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-06-7907bf6f.avif"><source type="image/webp" srcset="figures/fig-06-7907bf6f.webp"><img src="figures/fig-06-7907bf6f.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>1. Before the bell.</b> What is next, when it starts, the whole night down the left, and the four about to play. No cameras yet, so no frames: between rounds the wall is the timer and the line-up.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-07-3dd9bdbe.avif"><source type="image/webp" srcset="figures/fig-07-3dd9bdbe.webp"><img src="figures/fig-07-3dd9bdbe.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>2. The board, most of the round.</b> Rank, face, name, the market each seat is in, and one score, green up, red down. The rail under the headline shows the six beats of the round with the live one lit.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-08-f7356e83.avif"><source type="image/webp" srcset="figures/fig-08-f7356e83.webp"><img src="figures/fig-08-f7356e83.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>3. Rank moves.</b> A seat that just overtook another gets a small arrow beside its name and a flash of colour on its row for two seconds. The row keeps its size.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-09-27032f85.avif"><source type="image/webp" srcset="figures/fig-09-27032f85.webp"><img src="figures/fig-09-27032f85.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>4. The Hot warning.</b> Fifteen seconds before a Hot Market the board dims under a count. Which asset stays secret.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-10-e49978c3.avif"><source type="image/webp" srcset="figures/fig-10-e49978c3.webp"><img src="figures/fig-10-e49978c3.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>5. The slam.</b> At zero the asset fills the wall for a beat.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-11-d8ad6f1c.avif"><source type="image/webp" srcset="figures/fig-11-d8ad6f1c.webp"><img src="figures/fig-11-d8ad6f1c.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>6. The Hot board.</b> Orange. Same order, same score; under each score a heavier "Hot" line says what the Hot asset has done to it so far, and it counts double. A Hot loss takes the same chip a losing score takes. Two minutes later the plain board is back, and the second Hot repeats all of this with a different asset.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-12-7f1fbdff.avif"><source type="image/webp" srcset="figures/fig-12-7f1fbdff.webp"><img src="figures/fig-12-7f1fbdff.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>7. The Boost count.</b> The last fifteen seconds of the final build, in red, over the dimmed board.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-13-76f46978.avif"><source type="image/webp" srcset="figures/fig-13-76f46978.webp"><img src="figures/fig-13-76f46978.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>8. The Boost slam.</b> The multiplier fills the wall for a beat.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-14-70a81904.avif"><source type="image/webp" srcset="figures/fig-14-70a81904.webp"><img src="figures/fig-14-70a81904.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>9. The Boost board.</b> Red for the last three minutes, set in black, with the multiplier as the headline. The boost tag marks anyone in a Boost ticker.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-15-175de613.avif"><source type="image/webp" srcset="figures/fig-15-175de613.webp"><img src="figures/fig-15-175de613.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>10. The race view.</b> At any point the desk can swap the board for every seat's score through the round as a line, with rank, name and score at the end and the Hot and Boost moments marked. Synthetic series.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-16-5f1bd52b.avif"><source type="image/webp" srcset="figures/fig-16-5f1bd52b.webp"><img src="figures/fig-16-5f1bd52b.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>11. The Boost chart.</b> While the 500x window is open the race view narrows to the last five minutes, the window tinted, on a dark panel so each seat keeps its colour. Synthetic series.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-17-25e87de5.avif"><source type="image/webp" srcset="figures/fig-17-25e87de5.webp"><img src="figures/fig-17-25e87de5.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>12. Heart rate.</b> The same chart for the pulse, from Bluetooth chest straps paired on the desk laptop. A fake pulse can stand in at a rehearsal. Synthetic series; no strap has been on a player yet.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-18-cbf739b8.avif"><source type="image/webp" srcset="figures/fig-18-cbf739b8.webp"><img src="figures/fig-18-cbf739b8.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>13. The bell.</b> When the round ends on the chart it holds for twelve seconds, the winner's line at full weight and the others dimmed, then the result follows.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-19-7448d413.avif"><source type="image/webp" srcset="figures/fig-19-7448d413.webp"><img src="figures/fig-19-7448d413.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>14. The result.</b> The winner named in the header, each seat with a through or out tag, a bar under the name scaled to the biggest score at the table, and the winner's round in four figures: peak, deepest dip, biggest move, how long they led.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-20-bc7c767c.avif"><source type="image/webp" srcset="figures/fig-20-bc7c767c.webp"><img src="figures/fig-20-bc7c767c.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>15. Between rounds.</b> The night filled in: who won each round, and the four who came through, outlined in green. No frames. The bracket is Belgrade's; the numbers are illustrative.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-21-7a79838e.avif"><source type="image/webp" srcset="figures/fig-21-7a79838e.webp"><img src="figures/fig-21-7a79838e.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>16. The final.</b> The same board as every other round. With two seats the rows scale to fill the wall, faces with them, and one line under the board says who leads and by how much. Two seats, so two frames, one large frame each side.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-22-5a37e48b.avif"><source type="image/webp" srcset="figures/fig-22-5a37e48b.webp"><img src="figures/fig-22-5a37e48b.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>At any time: the liquidation flash.</b> When a seat's position is liquidated the wall turns red for two and a half seconds, black on red like the Boost moments, with the face, the word, whose position on which market, and what it cost, then the board comes back. The position is liquidated, not the trader: the seat keeps trading the rest of the round. The frames stay above it.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-23-bd008efc.avif"><source type="image/webp" srcset="figures/fig-23-bd008efc.webp"><img src="figures/fig-23-bd008efc.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>At any time: the cover.</b> One button on the desk. Deliberately plain. The line underneath says whether the competition is still running behind it.</figcaption>
+  </figure>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Venue</p>
+    <h2>The wall at the venue</h2>
+    <h3>The screen</h3>
+    <p>The main screen is 2620 by 1310 pixels, ten metres by five, a 2:1 wall, and its lower part sits behind the traders' desks and the host. The wall page is sized in viewport units, so it fills a 2:1 screen without letterboxing; at that size a board name is about 42 cm tall and the reveal count about 2.7 m.</p>
+    <p>Because the bottom is hidden, the wall takes a safe area that keeps the bottom thirty percent empty and pulls every screen up into the part the room can see, the corner frames and the full-screen moments included. The hidden strip is painted black on every screen, whatever colour the screen is, so nothing glows out from behind the desks.</p>
+    <h3>The cameras</h3>
+    <p>Livestream mode narrows the board to the middle of the screen and reserves one square frame per seat in the corners, outside the board, with the seat's name and live score on a plate under it. The stream mix puts that seat's camera in that frame. Two seats, the final, get one large frame each side. With the chroma key on, the frames are painted solid green for the mixer to key the cameras into; with it off they hold the seat's picture, which is how a wall reads when no mixer is connected. The frames are only up while cameras are live, during a round; between rounds the wall runs full width.</p>
+    <h3>Set from the desk</h3>
+    <p>The frames, the chroma key and the safe-area percentage are set from the desk's Output row, and every wall follows within a few seconds, so the venue machine opens the plain wall address and nothing has to be typed right on the night. Two presets do the whole thing: Venue is frames on and safe area 30 percent; X stream is frames off and no safe area. The address switches listed in the reference still work as a fallback until the desk has spoken.</p>
+  </div>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-24-f278ddf5.avif"><source type="image/webp" srcset="figures/fig-24-f278ddf5.webp"><img src="figures/fig-24-f278ddf5.jpg" alt="" width="1200" height="600" loading="lazy" decoding="async"></picture>
+    <figcaption><b>Keyed.</b> The venue wall with the frames painted for chroma key, ready for the mixer. Everything else identical.</figcaption>
+  </figure>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Stream</p>
+    <h2>The X stream</h2>
+    <p>The stream is a second output of the same wall page, not a second wall. X Live takes a 16:9 feed, 1280 by 720 or 1920 by 1080 at 30 frames a second, over RTMP from the stream mixer, and phones show it letterboxed, so the stream is composed for a landscape 1920 by 1080 frame.</p>
+    <p>In the mixer the wall page is one browser source at that size with the desk's Output on the X stream preset: no corner frames and no safe area, the board fills the frame, and the mixer lays its own cameras over it wherever the stream wants them. Every moment of the round is the same on both outputs.</p>
+  </div>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-25-09b4f6e0.avif"><source type="image/webp" srcset="figures/fig-25-09b4f6e0.webp"><img src="figures/fig-25-09b4f6e0.jpg" alt="" width="1200" height="675" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The X stream, most of the round.</b> The board at 16:9, full frame, nothing reserved for cameras.</figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-26-6bec1988.avif"><source type="image/webp" srcset="figures/fig-26-6bec1988.webp"><img src="figures/fig-26-6bec1988.jpg" alt="" width="1200" height="675" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The X stream, during a Hot Market.</b></figcaption>
+  </figure>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-27-734e9bee.avif"><source type="image/webp" srcset="figures/fig-27-734e9bee.webp"><img src="figures/fig-27-734e9bee.jpg" alt="" width="1200" height="675" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The X stream, the final.</b></figcaption>
+  </figure>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Operator</p>
+    <h2>The desk</h2>
+    <p><b>One laptop runs the night, and nothing on it can change a result.</b> The desk is a private page behind an operator token. The round is on the left, the wall on the right. The strip across the top has the night's name, where the evening is in its plan, feed and session status, and one red button that covers the wall.</p>
+    <h3>The round half</h3>
+    <p>Show or practice, the format in one line (seats, how many go through, minutes), and one row per seat with a name and an X handle. One button pulls faces from the handles, another issues an invite link per seat; a seat joins by opening its link, no sign-up. Arm locks the field and seals the Hot draw. Start rings the bell now, in five, ten, twenty or thirty minutes, or at a set time. After an engine restart the engine wants five minutes of clean price history on the Hot candidates before it starts; an "Override readiness" button under that message starts on the operator's word, with the reason logged.</p>
+    <h3>The wall half</h3>
+    <p>A live preview of what the room sees, in the output shape the desk has set and at the wall's real proportions. Below it, the countdown, the last result with the official placements and prize money, and one button to put it on the wall. At the bottom, one row per group drives every wall screen. Screen: auto, which follows the round, the line-up, the between-rounds card, the final result. During the round: the board, the PnL lines or the heart rate, with a fake pulse for rehearsals. Output: the Venue and X stream presets and the switches behind them. Rehearse: the liquidation flash, the Hot reveal and slam, the Boost count and slam, fired on the wall for the room and the camera mix to see, never during a show round and never touching a score. Headline line: a line of text under the wall's headline.</p>
+    <h3>The night</h3>
+    <p>The plan is Round 1, Round 2, Semi-finals, The Final. The strip shows which are done and who won them. Call times stay on the laptop. Reset the night archives the rounds and clears the bracket; a History panel lists every night the desk has run, archived ones included, with each round's settled board and, for show nights, the official placings. Practice nights, any night whose name starts with "practice", never carry prize money.</p>
+    <h3>What it cannot do</h3>
+    <p>The desk does not pick the hot assets and does not see the sealed draw. It cannot edit a score, a fill or a placement. Everything it does is written to the round log at the foot of the page.</p>
+  </div>
+  <figure class="fig-wide">
+    <picture><source type="image/avif" srcset="figures/fig-28-345277a5.avif"><source type="image/webp" srcset="figures/fig-28-345277a5.webp"><img src="figures/fig-28-345277a5.jpg" alt="" width="1200" height="1171" loading="lazy" decoding="async"></picture>
+    <figcaption><b>The desk, between rounds.</b> Round 1 on the left waiting for its seats. The wall on the right: idle card, countdown controls, the last final's placements, and the rows that drive every wall screen. Live screenshot from a practice night; the wall panel has since been regrouped as described above.</figcaption>
+  </figure>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Under the hood</p>
+    <h2>Prices, fills and risk</h2>
+    <p>Prices come from one source at a time: Pyth Lazer, and if that fails Binance, then Coinbase. The engine does not blend them. Whichever source it is following is the price, so any liquidation can be checked against that venue. A clamp gate refuses single ticks that jump too far from the accepted index.</p>
+    <p>Orders fill at the mark. There are no fees, no slippage and no queue. One position per seat and market, isolated margin only on every competition account, maintenance margin half the initial margin at the position's leverage. Equity is always derived, never stored.</p>
+    <p>A price has to be fresh enough for the leverage in play, and 500x needs a fresher price than 100x. If the engine does not trust a price it holds the clock instead of trading on it.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Under the hood</p>
+    <h2>Proofs</h2>
+    <p>Every round boundary writes a per-seat proof: the marks, the positions, the fills, hashed. A result can be recomputed later and settled scores cannot be edited. The sealed draw is committed before the bell and revealed after the round, and the wall's "Verify the round" link on the desk serves both.</p>
+    <p>The two mechanics are enforced in the engine, not on the screens: the wall, the terminal and the desk read the same published state, and none of them can change a score.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Under the hood</p>
+    <h2>The machine</h2>
+    <p>One dedicated server in Germany runs the whole paper stack: the engine, the terminal, the wall, the desk, the identity service and the price history. It is not a cloud instance and shares the machine with nothing else.</p>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>What</th><th>Figure</th></tr></thead>
+      <tbody>
+        <tr><td>Host</td><td>Bare metal, Allnodes, Offenbach near Frankfurt</td></tr>
+        <tr><td>Processor</td><td>AMD Ryzen 7 9700X, 8 cores, 16 threads, up to 5.5 GHz</td></tr>
+        <tr><td>Memory</td><td>30 GB, about 2 GB in use</td></tr>
+        <tr><td>Storage</td><td>874 GB NVMe, 27% used</td></tr>
+        <tr><td>Engine</td><td>One Node process, one thread, about 8% of one core during a round, 170 MB</td></tr>
+        <tr><td>Whole box</td><td>Load average 0.1 on 16 threads during a practice round</td></tr>
+        <tr><td>Prices</td><td>Pyth Lazer first, Binance and Coinbase behind it, held on the last accepted mark if all fail</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>The engine runs on one thread. The same thread prices, fills, scores and answers requests, so a fill is never decided on a price that another thread has already replaced. Its heaviest moment is opening the 500x window: a few hundred milliseconds while four markets open at once. The machine runs at about a tenth of one core.</p>
+    <p>What can still interrupt a round is upstream: the price feeds, and the venue's network between the players' laptops and the server. The engine source is public at <a href="https://github.com/solanadevmint/paper-competition-engine">github.com/solanadevmint/paper-competition-engine</a>, byte for byte the build that is live.</p>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <p class="eyebrow">Reference</p>
+    <h2>Numbers and switches</h2>
+    <h3>Prizes per stop</h3>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Place</th><th>Prize</th></tr></thead>
+      <tbody>
+        <tr><td>Champion</td><td>$2,500</td></tr>
+        <tr><td>Runner up</td><td>$1,500</td></tr>
+        <tr><td>Third, the higher-scoring semifinal loser</td><td>$1,000</td></tr>
+        <tr><td>Fourth</td><td>nothing</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <h3>Ties</h3>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">Tie</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>Higher score</td></tr>
+        <tr><td class="num">2</td><td>Smaller maximum drawdown</td></tr>
+        <tr><td class="num">3</td><td>Higher realised PnL</td></tr>
+        <tr><td class="num">4</td><td>Lower seat number</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <h3>The clock</h3>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Beat</th><th>Thirty-minute round</th><th>Twenty-minute final</th></tr></thead>
+      <tbody>
+        <tr><td>First Hot fires between</td><td>3:15 and 10:00</td><td>2:15 and 6:00</td></tr>
+        <tr><td>Second Hot fires between</td><td>13:00 and 20:00</td><td>8:30 and 12:00</td></tr>
+        <tr><td>Each Hot lasts</td><td>2:00</td><td>2:00</td></tr>
+        <tr><td>Boost opens at</td><td>27:00</td><td>17:00</td></tr>
+        <tr><td>Warning before a Hot or the Boost</td><td>0:15</td><td>0:15</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <h3>Wall address switches, fallbacks to the desk's Output row</h3>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Switch</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>?stream=1</code>, or the S key</td><td>Livestream mode: board in the middle, camera frames in the corners</td></tr>
+        <tr><td><code>?chroma=1</code></td><td>Frames painted green for keying</td></tr>
+        <tr><td><code>?safe=30</code></td><td>Keep the bottom 30 percent empty and black</td></tr>
+        <tr><td><code>?view=race</code>, or the R key</td><td>The race view instead of the board</td></tr>
+        <tr><td><code>?view=heart</code>, or the H key</td><td>The heart-rate view</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+
+
+
+<footer>
+  <div class="col">
+  Frontier Traders World Cup, engine reference. 14 September 2026.<br>
+  Terminal figures are screenshots of a live round. Wall figures are rendered from the wall's own stylesheet at venue size, camera frames drawn as placeholders.
+  </div>
+</footer>
+
+</div>
